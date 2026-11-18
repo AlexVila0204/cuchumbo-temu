@@ -134,6 +134,10 @@ export async function consumeLoginAttempt(personId: string): Promise<boolean> {
   );
 }
 
+export async function updatePinHash(personId: string, pinHash: string): Promise<void> {
+  unwrap(await db().from("people").update({ pin_hash: pinHash, failed_attempts: 0 }).eq("id", personId));
+}
+
 export async function resetLoginAttempts(personId: string): Promise<void> {
   unwrap(await db().from("people").update({ failed_attempts: 0 }).eq("id", personId));
 }

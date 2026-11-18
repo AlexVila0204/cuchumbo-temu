@@ -16,8 +16,6 @@ export function JoinForm() {
         name="pin"
         placeholder="PIN (4-6 números)"
         required
-        inputMode="numeric"
-        pattern="\d{4,6}"
         type="password"
         className={INPUT_CLASS}
       />

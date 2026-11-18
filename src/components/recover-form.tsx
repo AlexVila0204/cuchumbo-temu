@@ -13,6 +13,15 @@ export function RecoverForm() {
       <h2 className="text-lg font-bold">Recuperar acceso</h2>
       <input name="name" placeholder="Tu nombre" required maxLength={30} className={INPUT_CLASS} />
       <input name="key" placeholder="Llave" required type="password" className={INPUT_CLASS} />
+      <input
+        name="password"
+        placeholder="Nueva contraseña (mín. 12)"
+        required
+        minLength={12}
+        type="password"
+        autoComplete="new-password"
+        className={INPUT_CLASS}
+      />
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
       <SubmitButton>Entrar</SubmitButton>
     </form>

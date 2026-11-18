@@ -14,6 +14,7 @@ import {
   releaseWish,
   reserveWish,
   resetLoginAttempts,
+  updatePinHash,
   type PersonWithPin,
 } from "@/lib/data";
 import { hashPin, verifyPin } from "@/lib/pin";
@@ -24,6 +25,7 @@ import { fetchTemuProduct } from "@/lib/temu";
 export type FormState = { error?: string };
 
 const PIN_PATTERN = /^\d{4,6}$/;
+const ADMIN_PASSWORD_MIN_LENGTH = 12;
 const TITLE_MAX_LENGTH = 120;
 
 function readText(formData: FormData, key: string): string {
@@ -38,7 +40,13 @@ function toSlug(name: string): string {
   return name.toLowerCase();
 }
 
-async function authenticate(person: PersonWithPin, pin: string): Promise<string | null> {
+function authenticateAdmin(person: PersonWithPin, password: string): string | null {
+  if (password.length < ADMIN_PASSWORD_MIN_LENGTH) return "Clave incorrecta";
+  return verifyPin(password, person.pinHash) ? null : "Clave incorrecta";
+}
+
+async function authenticateMember(person: PersonWithPin, pin: string): Promise<string | null> {
+  if (!PIN_PATTERN.test(pin)) return "PIN de 4 a 6 números";
   if (!(await consumeLoginAttempt(person.id))) return "Cuenta bloqueada";
   if (!verifyPin(pin, person.pinHash)) return "PIN incorrecto";
   await resetLoginAttempts(person.id);
@@ -47,30 +55,38 @@ async function authenticate(person: PersonWithPin, pin: string): Promise<string 
 
 export async function join(_: FormState, formData: FormData): Promise<FormState> {
   const name = readName(formData);
-  const pin = readText(formData, "pin");
+  const secret = readText(formData, "pin");
   if (name.length < 2 || name.length > 30) return { error: "Nombre inválido" };
-  if (!PIN_PATTERN.test(pin)) return { error: "PIN de 4 a 6 números" };
 
   const slug = toSlug(name);
   const existing = await findPersonBySlug(slug);
   if (existing) {
-    const error = await authenticate(existing, pin);
+    const error = existing.isAdmin
+      ? authenticateAdmin(existing, secret)
+      : await authenticateMember(existing, secret);
     if (error) return { error };
+  } else if (!PIN_PATTERN.test(secret)) {
+    return { error: "PIN de 4 a 6 números" };
   }
 
-  const person = existing ?? (await createPerson(name, slug, hashPin(pin)));
+  const person = existing ?? (await createPerson(name, slug, hashPin(secret)));
   await setSession(person.id);
   refresh();
   return {};
 }
 
 export async function recover(_: FormState, formData: FormData): Promise<FormState> {
+  const password = readText(formData, "password");
+  if (password.length < ADMIN_PASSWORD_MIN_LENGTH) {
+    return { error: `Contraseña de mínimo ${ADMIN_PASSWORD_MIN_LENGTH} caracteres` };
+  }
+
   const person = isValidRecoveryKey(readText(formData, "key"))
     ? await findPersonBySlug(toSlug(readName(formData)))
     : null;
   if (!person?.isAdmin) return { error: "Datos inválidos" };
 
-  await resetLoginAttempts(person.id);
+  await updatePinHash(person.id, hashPin(password));
   await setSession(person.id);
   redirect("/");
 }
