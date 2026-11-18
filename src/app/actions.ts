@@ -1,6 +1,7 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireAdmin, requireApprovedPerson } from "@/lib/auth";
 import {
   approvePerson,
@@ -16,6 +17,7 @@ import {
   type PersonWithPin,
 } from "@/lib/data";
 import { hashPin, verifyPin } from "@/lib/pin";
+import { isValidRecoveryKey } from "@/lib/recovery";
 import { clearSession, setSession } from "@/lib/session";
 import { fetchTemuProduct } from "@/lib/temu";
 
@@ -28,6 +30,14 @@ function readText(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
 }
 
+function readName(formData: FormData): string {
+  return readText(formData, "name").replace(/\s+/g, " ");
+}
+
+function toSlug(name: string): string {
+  return name.toLowerCase();
+}
+
 async function authenticate(person: PersonWithPin, pin: string): Promise<string | null> {
   if (!(await consumeLoginAttempt(person.id))) return "Cuenta bloqueada";
   if (!verifyPin(pin, person.pinHash)) return "PIN incorrecto";
@@ -36,12 +46,12 @@ async function authenticate(person: PersonWithPin, pin: string): Promise<string 
 }
 
 export async function join(_: FormState, formData: FormData): Promise<FormState> {
-  const name = readText(formData, "name").replace(/\s+/g, " ");
+  const name = readName(formData);
   const pin = readText(formData, "pin");
   if (name.length < 2 || name.length > 30) return { error: "Nombre inválido" };
   if (!PIN_PATTERN.test(pin)) return { error: "PIN de 4 a 6 números" };
 
-  const slug = name.toLowerCase();
+  const slug = toSlug(name);
   const existing = await findPersonBySlug(slug);
   if (existing) {
     const error = await authenticate(existing, pin);
@@ -52,6 +62,17 @@ export async function join(_: FormState, formData: FormData): Promise<FormState>
   await setSession(person.id);
   refresh();
   return {};
+}
+
+export async function recover(_: FormState, formData: FormData): Promise<FormState> {
+  const person = isValidRecoveryKey(readText(formData, "key"))
+    ? await findPersonBySlug(toSlug(readName(formData)))
+    : null;
+  if (!person?.isAdmin) return { error: "Datos inválidos" };
+
+  await resetLoginAttempts(person.id);
+  await setSession(person.id);
+  redirect("/");
 }
 
 export async function logout(): Promise<void> {

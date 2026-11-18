@@ -2,17 +2,16 @@
 
 import { useActionState } from "react";
 import { join, type FormState } from "@/app/actions";
+import { CARD_FORM_CLASS, INPUT_CLASS } from "./styles";
 import { SubmitButton } from "./submit-button";
-
-const INPUT = "w-full rounded-lg border border-stone-300 bg-white px-3 py-2 outline-none focus:border-orange-500";
 
 export function JoinForm() {
   const [state, formAction] = useActionState<FormState, FormData>(join, {});
 
   return (
-    <form action={formAction} className="mx-auto flex w-full max-w-sm flex-col gap-3 rounded-2xl bg-white p-6 shadow-sm">
+    <form action={formAction} className={CARD_FORM_CLASS}>
       <h2 className="text-lg font-bold">Entrar</h2>
-      <input name="name" placeholder="Tu nombre" required maxLength={30} className={INPUT} />
+      <input name="name" placeholder="Tu nombre" required maxLength={30} className={INPUT_CLASS} />
       <input
         name="pin"
         placeholder="PIN (4-6 números)"
@@ -20,7 +19,7 @@ export function JoinForm() {
         inputMode="numeric"
         pattern="\d{4,6}"
         type="password"
-        className={INPUT}
+        className={INPUT_CLASS}
       />
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
       <SubmitButton>Entrar</SubmitButton>
