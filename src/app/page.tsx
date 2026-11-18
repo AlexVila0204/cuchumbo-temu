@@ -8,7 +8,7 @@ export default function Home() {
         <h1 className="text-4xl font-black tracking-tight">
           Cuchumbo <span className="text-orange-500">Temu</span>
         </h1>
-        <p className="mt-2 text-stone-600">Cada quien sube lo que quiere. Tú eliges qué regalar.</p>
+        <p className="mt-2 text-stone-600">Una página por Coso Solutions</p>
       </header>
       <Suspense fallback={<p className="text-center text-stone-500">Cargando...</p>}>
         <Board />
