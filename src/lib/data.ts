@@ -2,8 +2,16 @@ import "server-only";
 import { db } from "./db";
 import type { TemuProduct } from "./temu";
 
-export type Person = { id: string; name: string };
+export type Person = { id: string; name: string; approved: boolean; isAdmin: boolean };
 export type PersonWithPin = Person & { pinHash: string };
+
+type PersonRow = { id: string; name: string; approved: boolean; is_admin: boolean };
+
+const PERSON_COLUMNS = "id, name, approved, is_admin";
+
+function toPerson(row: PersonRow): Person {
+  return { id: row.id, name: row.name, approved: row.approved, isAdmin: row.is_admin };
+}
 export type Wish = {
   id: string;
   ownerId: string;
@@ -41,24 +49,47 @@ function unwrap<T>({ data, error }: { data: T | null; error: { message: string }
 }
 
 export async function findPersonBySlug(slug: string): Promise<PersonWithPin | null> {
-  const row = unwrap<{ id: string; name: string; pin_hash: string } | null>(
-    await db().from("people").select("id, name, pin_hash").eq("slug", slug).maybeSingle(),
+  const row = unwrap<(PersonRow & { pin_hash: string }) | null>(
+    await db().from("people").select(`${PERSON_COLUMNS}, pin_hash`).eq("slug", slug).maybeSingle(),
   );
-  return row ? { id: row.id, name: row.name, pinHash: row.pin_hash } : null;
+  return row ? { ...toPerson(row), pinHash: row.pin_hash } : null;
 }
 
 export async function findPerson(id: string): Promise<Person | null> {
-  return unwrap(await db().from("people").select("id, name").eq("id", id).maybeSingle());
+  const row = unwrap<PersonRow | null>(
+    await db().from("people").select(PERSON_COLUMNS).eq("id", id).maybeSingle(),
+  );
+  return row ? toPerson(row) : null;
 }
 
 export async function createPerson(name: string, slug: string, pinHash: string): Promise<Person> {
-  return unwrap(
-    await db().from("people").insert({ name, slug, pin_hash: pinHash }).select("id, name").single(),
+  const row = unwrap<PersonRow>(
+    await db().from("people").insert({ name, slug, pin_hash: pinHash }).select(PERSON_COLUMNS).single(),
   );
+  return toPerson(row);
 }
 
-export async function listPeople(): Promise<Person[]> {
-  return unwrap(await db().from("people").select("id, name").order("created_at"));
+async function listPeopleByApproval(approved: boolean): Promise<Person[]> {
+  const rows = unwrap<PersonRow[]>(
+    await db().from("people").select(PERSON_COLUMNS).eq("approved", approved).order("created_at"),
+  );
+  return rows.map(toPerson);
+}
+
+export function listApprovedPeople(): Promise<Person[]> {
+  return listPeopleByApproval(true);
+}
+
+export function listPendingPeople(): Promise<Person[]> {
+  return listPeopleByApproval(false);
+}
+
+export async function approvePerson(id: string): Promise<void> {
+  unwrap(await db().from("people").update({ approved: true }).eq("id", id));
+}
+
+export async function rejectPerson(id: string): Promise<void> {
+  unwrap(await db().from("people").delete().eq("id", id).eq("approved", false));
 }
 
 export async function listWishes(): Promise<Wish[]> {

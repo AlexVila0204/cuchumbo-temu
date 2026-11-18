@@ -3,6 +3,8 @@ create table if not exists public.people (
   name text not null,
   slug text not null unique,
   pin_hash text not null,
+  approved boolean not null default false,
+  is_admin boolean not null default false,
   created_at timestamptz not null default now()
 );
 

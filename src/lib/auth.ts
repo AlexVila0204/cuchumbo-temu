@@ -7,8 +7,14 @@ export async function getCurrentPerson(): Promise<Person | null> {
   return personId ? findPerson(personId) : null;
 }
 
-export async function requirePerson(): Promise<Person> {
+export async function requireApprovedPerson(): Promise<Person> {
   const person = await getCurrentPerson();
-  if (!person) throw new Error("Not signed in");
+  if (!person?.approved) throw new Error("Not approved");
+  return person;
+}
+
+export async function requireAdmin(): Promise<Person> {
+  const person = await requireApprovedPerson();
+  if (!person.isAdmin) throw new Error("Not admin");
   return person;
 }

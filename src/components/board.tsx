@@ -1,8 +1,9 @@
 import { logout } from "@/app/actions";
 import { getCurrentPerson } from "@/lib/auth";
-import { listPeople, listWishes, type Person, type Wish } from "@/lib/data";
+import { listApprovedPeople, listPendingPeople, listWishes, type Person, type Wish } from "@/lib/data";
 import { AddWishForm } from "./add-wish-form";
 import { JoinForm } from "./join-form";
+import { PendingRequests } from "./pending-requests";
 import { WishCard } from "./wish-card";
 
 type SectionProps = {
@@ -35,26 +36,45 @@ function wishesOf(person: Person, wishes: Wish[]): Wish[] {
   return wishes.filter((wish) => wish.ownerId === person.id);
 }
 
+function Greeting({ name }: { name: string }) {
+  return (
+    <div className="flex items-center justify-between">
+      <p className="text-stone-600">
+        Hola, <span className="font-semibold text-stone-900">{name}</span>
+      </p>
+      <form action={logout}>
+        <button type="submit" className="text-sm text-stone-500 hover:text-stone-800">
+          Salir
+        </button>
+      </form>
+    </div>
+  );
+}
+
 export async function Board() {
   const me = await getCurrentPerson();
   if (!me) return <JoinForm />;
+  if (!me.approved) {
+    return (
+      <div className="flex flex-col gap-6">
+        <Greeting name={me.name} />
+        <p className="rounded-2xl bg-white p-6 text-center text-stone-600 shadow-sm">Esperando aprobación</p>
+      </div>
+    );
+  }
 
-  const [people, wishes] = await Promise.all([listPeople(), listWishes()]);
+  const [people, pending, wishes] = await Promise.all([
+    listApprovedPeople(),
+    me.isAdmin ? listPendingPeople() : Promise.resolve([]),
+    listWishes(),
+  ]);
   const names = new Map(people.map((person) => [person.id, person.name]));
   const others = people.filter((person) => person.id !== me.id);
 
   return (
     <div className="flex flex-col gap-10">
-      <div className="flex items-center justify-between">
-        <p className="text-stone-600">
-          Hola, <span className="font-semibold text-stone-900">{me.name}</span>
-        </p>
-        <form action={logout}>
-          <button type="submit" className="text-sm text-stone-500 hover:text-stone-800">
-            Salir
-          </button>
-        </form>
-      </div>
+      <Greeting name={me.name} />
+      <PendingRequests people={pending} />
 
       <PersonSection title="Mi lista" wishes={wishesOf(me, wishes)} viewerId={me.id} names={names}>
         <AddWishForm />

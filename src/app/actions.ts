@@ -1,12 +1,14 @@
 "use server";
 
 import { refresh } from "next/cache";
-import { requirePerson } from "@/lib/auth";
+import { requireAdmin, requireApprovedPerson } from "@/lib/auth";
 import {
+  approvePerson,
   createPerson,
   deleteWish,
   findPersonBySlug,
   insertWish,
+  rejectPerson,
   releaseWish,
   reserveWish,
 } from "@/lib/data";
@@ -45,7 +47,7 @@ export async function logout(): Promise<void> {
 }
 
 export async function addWish(_: FormState, formData: FormData): Promise<FormState> {
-  const me = await requirePerson();
+  const me = await requireApprovedPerson();
   const product = await fetchTemuProduct(readText(formData, "url")).catch(() => null);
   if (!product) return { error: "Link de Temu inválido" };
 
@@ -56,19 +58,31 @@ export async function addWish(_: FormState, formData: FormData): Promise<FormSta
 }
 
 export async function removeWish(formData: FormData): Promise<void> {
-  const me = await requirePerson();
+  const me = await requireApprovedPerson();
   await deleteWish(readText(formData, "wishId"), me.id);
   refresh();
 }
 
 export async function reserve(formData: FormData): Promise<void> {
-  const me = await requirePerson();
+  const me = await requireApprovedPerson();
   await reserveWish(readText(formData, "wishId"), me.id);
   refresh();
 }
 
 export async function release(formData: FormData): Promise<void> {
-  const me = await requirePerson();
+  const me = await requireApprovedPerson();
   await releaseWish(readText(formData, "wishId"), me.id);
+  refresh();
+}
+
+export async function approve(formData: FormData): Promise<void> {
+  await requireAdmin();
+  await approvePerson(readText(formData, "personId"));
+  refresh();
+}
+
+export async function reject(formData: FormData): Promise<void> {
+  await requireAdmin();
+  await rejectPerson(readText(formData, "personId"));
   refresh();
 }
