@@ -1,9 +1,16 @@
-import { logout } from "@/app/actions";
+import { approve, logout, reject, unlock } from "@/app/actions";
 import { getCurrentPerson } from "@/lib/auth";
-import { listApprovedPeople, listPendingPeople, listWishes, type Person, type Wish } from "@/lib/data";
+import {
+  listApprovedPeople,
+  listLockedPeople,
+  listPendingPeople,
+  listWishes,
+  type Person,
+  type Wish,
+} from "@/lib/data";
 import { AddWishForm } from "./add-wish-form";
+import { AdminPeopleList } from "./admin-people-list";
 import { JoinForm } from "./join-form";
-import { PendingRequests } from "./pending-requests";
 import { WishCard } from "./wish-card";
 
 type SectionProps = {
@@ -63,9 +70,10 @@ export async function Board() {
     );
   }
 
-  const [people, pending, wishes] = await Promise.all([
+  const [people, pending, locked, wishes] = await Promise.all([
     listApprovedPeople(),
     me.isAdmin ? listPendingPeople() : Promise.resolve([]),
+    me.isAdmin ? listLockedPeople() : Promise.resolve([]),
     listWishes(),
   ]);
   const names = new Map(people.map((person) => [person.id, person.name]));
@@ -74,7 +82,15 @@ export async function Board() {
   return (
     <div className="flex flex-col gap-10">
       <Greeting name={me.name} />
-      <PendingRequests people={pending} />
+      <AdminPeopleList
+        title="Solicitudes"
+        people={pending}
+        actions={[
+          { label: "Aprobar", action: approve },
+          { label: "Rechazar", action: reject, variant: "danger" },
+        ]}
+      />
+      <AdminPeopleList title="Bloqueados" people={locked} actions={[{ label: "Desbloquear", action: unlock }]} />
 
       <PersonSection title="Mi lista" wishes={wishesOf(me, wishes)} viewerId={me.id} names={names}>
         <AddWishForm />

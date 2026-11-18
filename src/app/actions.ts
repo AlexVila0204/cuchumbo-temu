@@ -4,6 +4,7 @@ import { refresh } from "next/cache";
 import { requireAdmin, requireApprovedPerson } from "@/lib/auth";
 import {
   approvePerson,
+  consumeLoginAttempt,
   createPerson,
   deleteWish,
   findPersonBySlug,
@@ -11,6 +12,8 @@ import {
   rejectPerson,
   releaseWish,
   reserveWish,
+  resetLoginAttempts,
+  type PersonWithPin,
 } from "@/lib/data";
 import { hashPin, verifyPin } from "@/lib/pin";
 import { clearSession, setSession } from "@/lib/session";
@@ -25,6 +28,13 @@ function readText(formData: FormData, key: string): string {
   return String(formData.get(key) ?? "").trim();
 }
 
+async function authenticate(person: PersonWithPin, pin: string): Promise<string | null> {
+  if (!(await consumeLoginAttempt(person.id))) return "Cuenta bloqueada";
+  if (!verifyPin(pin, person.pinHash)) return "PIN incorrecto";
+  await resetLoginAttempts(person.id);
+  return null;
+}
+
 export async function join(_: FormState, formData: FormData): Promise<FormState> {
   const name = readText(formData, "name").replace(/\s+/g, " ");
   const pin = readText(formData, "pin");
@@ -33,7 +43,10 @@ export async function join(_: FormState, formData: FormData): Promise<FormState>
 
   const slug = name.toLowerCase();
   const existing = await findPersonBySlug(slug);
-  if (existing && !verifyPin(pin, existing.pinHash)) return { error: "PIN incorrecto" };
+  if (existing) {
+    const error = await authenticate(existing, pin);
+    if (error) return { error };
+  }
 
   const person = existing ?? (await createPerson(name, slug, hashPin(pin)));
   await setSession(person.id);
@@ -84,5 +97,11 @@ export async function approve(formData: FormData): Promise<void> {
 export async function reject(formData: FormData): Promise<void> {
   await requireAdmin();
   await rejectPerson(readText(formData, "personId"));
+  refresh();
+}
+
+export async function unlock(formData: FormData): Promise<void> {
+  await requireAdmin();
+  await resetLoginAttempts(readText(formData, "personId"));
   refresh();
 }

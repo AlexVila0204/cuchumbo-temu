@@ -125,3 +125,26 @@ export async function releaseWish(wishId: string, personId: string): Promise<voi
       .eq("reserved_by", personId),
   );
 }
+
+const MAX_LOGIN_ATTEMPTS = 3;
+
+export async function consumeLoginAttempt(personId: string): Promise<boolean> {
+  return unwrap<boolean>(
+    await db().rpc("consume_login_attempt", { p_person_id: personId, p_max_attempts: MAX_LOGIN_ATTEMPTS }),
+  );
+}
+
+export async function resetLoginAttempts(personId: string): Promise<void> {
+  unwrap(await db().from("people").update({ failed_attempts: 0 }).eq("id", personId));
+}
+
+export async function listLockedPeople(): Promise<Person[]> {
+  const rows = unwrap<PersonRow[]>(
+    await db()
+      .from("people")
+      .select(PERSON_COLUMNS)
+      .gte("failed_attempts", MAX_LOGIN_ATTEMPTS)
+      .order("created_at"),
+  );
+  return rows.map(toPerson);
+}
