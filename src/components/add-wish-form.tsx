@@ -11,7 +11,7 @@ export function AddWishForm() {
 
   return (
     <form action={formAction} className="flex flex-col gap-2 rounded-2xl bg-white p-3 shadow-sm sm:flex-row">
-      <input name="url" required placeholder="Pega tu link de Temu" className={`${INPUT} flex-[2]`} />
+      <input name="url" required placeholder="Escribí el perro link acá" className={`${INPUT} flex-[2]`} />
       <input name="title" maxLength={120} placeholder="¿Qué es? (opcional)" className={`${INPUT} flex-1`} />
       <div className="sm:w-32">
         <SubmitButton>Agregar</SubmitButton>
