@@ -88,8 +88,8 @@ export async function approvePerson(id: string): Promise<void> {
   unwrap(await db().from("people").update({ approved: true }).eq("id", id));
 }
 
-export async function rejectPerson(id: string): Promise<void> {
-  unwrap(await db().from("people").delete().eq("id", id).eq("approved", false));
+export async function deleteNonAdminPerson(id: string): Promise<void> {
+  unwrap(await db().from("people").delete().eq("id", id).eq("is_admin", false));
 }
 
 export async function listWishes(): Promise<Wish[]> {

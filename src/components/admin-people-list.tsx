@@ -5,6 +5,7 @@ type PersonAction = {
   label: string;
   action: (formData: FormData) => Promise<void>;
   variant?: "primary" | "danger";
+  confirm?: string;
 };
 
 type Props = {
@@ -23,10 +24,12 @@ export function AdminPeopleList({ title, people, actions }: Props) {
         {people.map((person) => (
           <li key={person.id} className="flex items-center gap-2">
             <span className="flex-1 font-medium">{person.name}</span>
-            {actions.map(({ label, action, variant }) => (
+            {actions.map(({ label, action, variant, confirm }) => (
               <form key={label} action={action} className="w-28">
                 <input type="hidden" name="personId" value={person.id} />
-                <SubmitButton variant={variant}>{label}</SubmitButton>
+                <SubmitButton variant={variant} confirm={confirm}>
+                  {label}
+                </SubmitButton>
               </form>
             ))}
           </li>

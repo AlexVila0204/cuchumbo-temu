@@ -7,10 +7,10 @@ import {
   approvePerson,
   consumeLoginAttempt,
   createPerson,
+  deleteNonAdminPerson,
   deleteWish,
   findPersonBySlug,
   insertWish,
-  rejectPerson,
   releaseWish,
   reserveWish,
   resetLoginAttempts,
@@ -115,9 +115,9 @@ export async function approve(formData: FormData): Promise<void> {
   refresh();
 }
 
-export async function reject(formData: FormData): Promise<void> {
+export async function removePerson(formData: FormData): Promise<void> {
   await requireAdmin();
-  await rejectPerson(readText(formData, "personId"));
+  await deleteNonAdminPerson(readText(formData, "personId"));
   refresh();
 }
 

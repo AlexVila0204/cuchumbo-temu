@@ -1,4 +1,4 @@
-import { approve, logout, reject, unlock } from "@/app/actions";
+import { approve, logout, removePerson, unlock } from "@/app/actions";
 import { getCurrentPerson } from "@/lib/auth";
 import {
   listApprovedPeople,
@@ -78,6 +78,7 @@ export async function Board() {
   ]);
   const names = new Map(people.map((person) => [person.id, person.name]));
   const others = people.filter((person) => person.id !== me.id);
+  const members = me.isAdmin ? people.filter((person) => !person.isAdmin) : [];
 
   return (
     <div className="flex flex-col gap-10">
@@ -87,10 +88,15 @@ export async function Board() {
         people={pending}
         actions={[
           { label: "Aprobar", action: approve },
-          { label: "Rechazar", action: reject, variant: "danger" },
+          { label: "Rechazar", action: removePerson, variant: "danger" },
         ]}
       />
       <AdminPeopleList title="Bloqueados" people={locked} actions={[{ label: "Desbloquear", action: unlock }]} />
+      <AdminPeopleList
+        title="Miembros"
+        people={members}
+        actions={[{ label: "Eliminar", action: removePerson, variant: "danger", confirm: "¿Eliminar esta cuenta?" }]}
+      />
 
       <PersonSection title="Mi lista" wishes={wishesOf(me, wishes)} viewerId={me.id} names={names}>
         <AddWishForm />
