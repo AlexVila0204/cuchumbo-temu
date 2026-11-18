@@ -6,11 +6,10 @@ import { SubmitButton } from "./submit-button";
 type Props = {
   wish: Wish;
   viewerId: string;
-  viewerHasReservation: boolean;
   names: Map<string, string>;
 };
 
-function WishAction({ wish, viewerId, viewerHasReservation, names }: Props) {
+function WishAction({ wish, viewerId, names }: Props) {
   const hidden = <input type="hidden" name="wishId" value={wish.id} />;
 
   if (wish.ownerId === viewerId) {
@@ -35,9 +34,6 @@ function WishAction({ wish, viewerId, viewerHasReservation, names }: Props) {
         Reservado por {names.get(wish.reservedBy) ?? "alguien"}
       </p>
     );
-  }
-  if (viewerHasReservation) {
-    return <p className="px-3 py-2 text-center text-sm text-stone-400">Ya elegiste tu regalo</p>;
   }
   return (
     <form action={reserve}>

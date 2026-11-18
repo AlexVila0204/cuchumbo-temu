@@ -31,7 +31,6 @@ type WishRow = {
 };
 
 const WISH_COLUMNS = "id, owner_id, url, title, image, reserved_by";
-const UNIQUE_VIOLATION = "23505";
 
 function toWish(row: WishRow): Wish {
   return {
@@ -107,13 +106,14 @@ export async function deleteWish(wishId: string, ownerId: string): Promise<void>
 }
 
 export async function reserveWish(wishId: string, personId: string): Promise<void> {
-  const { error } = await db()
-    .from("wishes")
-    .update({ reserved_by: personId })
-    .eq("id", wishId)
-    .neq("owner_id", personId)
-    .is("reserved_by", null);
-  if (error && error.code !== UNIQUE_VIOLATION) throw new Error(error.message);
+  unwrap(
+    await db()
+      .from("wishes")
+      .update({ reserved_by: personId })
+      .eq("id", wishId)
+      .neq("owner_id", personId)
+      .is("reserved_by", null),
+  );
 }
 
 export async function releaseWish(wishId: string, personId: string): Promise<void> {

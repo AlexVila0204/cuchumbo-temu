@@ -41,7 +41,3 @@ $$;
 
 revoke execute on function public.consume_login_attempt(uuid, integer) from public, anon, authenticated;
 grant execute on function public.consume_login_attempt(uuid, integer) to service_role;
-
-create unique index if not exists wishes_one_reservation_per_person
-  on public.wishes (reserved_by)
-  where reserved_by is not null;

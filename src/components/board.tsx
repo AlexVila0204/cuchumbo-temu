@@ -17,12 +17,11 @@ type SectionProps = {
   title: string;
   wishes: Wish[];
   viewerId: string;
-  viewerHasReservation: boolean;
   names: Map<string, string>;
   children?: React.ReactNode;
 };
 
-function PersonSection({ title, wishes, viewerId, viewerHasReservation, names, children }: SectionProps) {
+function PersonSection({ title, wishes, viewerId, names, children }: SectionProps) {
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-xl font-bold">{title}</h2>
@@ -32,13 +31,7 @@ function PersonSection({ title, wishes, viewerId, viewerHasReservation, names, c
       ) : (
         <ul className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {wishes.map((wish) => (
-            <WishCard
-              key={wish.id}
-              wish={wish}
-              viewerId={viewerId}
-              viewerHasReservation={viewerHasReservation}
-              names={names}
-            />
+            <WishCard key={wish.id} wish={wish} viewerId={viewerId} names={names} />
           ))}
         </ul>
       )}
@@ -86,7 +79,6 @@ export async function Board() {
   const names = new Map(people.map((person) => [person.id, person.name]));
   const others = people.filter((person) => person.id !== me.id);
   const members = me.isAdmin ? people.filter((person) => !person.isAdmin) : [];
-  const hasReservation = wishes.some((wish) => wish.reservedBy === me.id);
 
   return (
     <div className="flex flex-col gap-10">
@@ -106,7 +98,7 @@ export async function Board() {
         actions={[{ label: "Eliminar", action: removePerson, variant: "danger", confirm: "¿Eliminar esta cuenta?" }]}
       />
 
-      <PersonSection title="Mi lista" wishes={wishesOf(me, wishes)} viewerId={me.id} viewerHasReservation={hasReservation} names={names}>
+      <PersonSection title="Mi lista" wishes={wishesOf(me, wishes)} viewerId={me.id} names={names}>
         <AddWishForm />
       </PersonSection>
 
@@ -116,7 +108,6 @@ export async function Board() {
           title={person.name}
           wishes={wishesOf(person, wishes)}
           viewerId={me.id}
-          viewerHasReservation={hasReservation}
           names={names}
         />
       ))}
