@@ -21,11 +21,13 @@ import { hashPin, verifyPin } from "@/lib/pin";
 import { isValidRecoveryKey } from "@/lib/recovery";
 import { clearSession, setSession } from "@/lib/session";
 import { fetchTemuProduct } from "@/lib/temu";
+import { isWeakPassword, isWeakPin } from "@/lib/weak-secret";
 
 export type FormState = { error?: string };
 
 const PIN_PATTERN = /^\d{4,6}$/;
 const ADMIN_PASSWORD_MIN_LENGTH = 12;
+const WEAK_SECRET_MESSAGE = "Puta que huevon son, que contraseña de mrd";
 const TITLE_MAX_LENGTH = 120;
 
 function readText(formData: FormData, key: string): string {
@@ -67,6 +69,8 @@ export async function join(_: FormState, formData: FormData): Promise<FormState>
     if (error) return { error };
   } else if (!PIN_PATTERN.test(secret)) {
     return { error: "PIN de 4 a 6 números" };
+  } else if (isWeakPin(secret)) {
+    return { error: WEAK_SECRET_MESSAGE };
   }
 
   const person = existing ?? (await createPerson(name, slug, hashPin(secret)));
@@ -85,6 +89,7 @@ export async function recover(_: FormState, formData: FormData): Promise<FormSta
     ? await findPersonBySlug(toSlug(readName(formData)))
     : null;
   if (!person?.isAdmin) return { error: "Datos inválidos" };
+  if (isWeakPassword(password, person.name)) return { error: WEAK_SECRET_MESSAGE };
 
   await updatePinHash(person.id, hashPin(password));
   await setSession(person.id);
